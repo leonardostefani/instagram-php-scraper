@@ -624,6 +624,31 @@ class Instagram
         }
         return Media::create($mediaArray['graphql']['shortcode_media']);
     }
+    
+    /**
+     * @param string $mediaUrl
+     *
+     * @return Media
+     * @throws InstagramException
+     * @throws InstagramNotFoundException
+     */
+    public function getByUrl($mediaUrl)
+    {
+        if (filter_var($mediaUrl, FILTER_VALIDATE_URL) === false) {
+            throw new InvalidArgumentException('Malformed media url');
+        }
+        $response = Request::get(rtrim($mediaUrl, '/') . '/?__a=1', $this->generateHeaders($this->userSession));
+
+        if (static::HTTP_NOT_FOUND === $response->code) {
+            throw new InstagramNotFoundException('Media with given code does not exist or account is private.');
+        }
+
+        if (static::HTTP_OK !== $response->code) {
+            throw new InstagramException('Response code is ' . $response->code . '. Body: ' . static::getErrorBody($response->body) . ' Something went wrong. Please report issue.', $response->code);
+        }
+
+        return $response;
+    }
 
     /**
      * @param string $mediaCode (for example BHaRdodBouH)
